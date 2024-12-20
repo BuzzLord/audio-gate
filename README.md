@@ -1,8 +1,8 @@
-![Icon](https://github.com/Visssarion/audio-gate/blob/main/icon.png?raw=true)
+![Icon](https://github.com/BuzzLord/audio-gate/blob/main/icon.png?raw=true)
 # AudioEffectGate
 Audio Gate Effect to mute all noise below certain threshold.
 
-![Screenshow showcasing effect added on an Audio Bus](https://github.com/Visssarion/audio-gate/blob/main/raw/screenshot_bus.png) ![Screenshow showcasing effect's parameters](https://github.com/Visssarion/audio-gate/blob/main/raw/screenshot_parameters.png)
+![Screenshow showcasing effect added on an Audio Bus](https://github.com/BuzzLord/audio-gate/blob/main/raw/screenshot_bus.png) ![Screenshow showcasing effect's parameters](https://github.com/BuzzLord/audio-gate/blob/main/raw/screenshot_parameters.png)
 
 
 ### Getting started:
