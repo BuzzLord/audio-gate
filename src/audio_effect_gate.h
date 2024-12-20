@@ -60,11 +60,11 @@ class AudioEffectGateInstance : public AudioEffectInstance {
 	GateState gate_state = GATE_CLOSED;
 	float last_envelope_value = 0.f;
 	int samples_since_below_threshold = 0.f;
-	bool below_threshold = true; // Start with silence
 protected:
     static void _bind_methods();
 public:
 	float next_envelope_value(float p_sample_rate);
+	void update_gate_state(float p_db_rms);
 
 	virtual void _process(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count);
 };
@@ -81,6 +81,7 @@ protected:
 	float release_ms = 50.f;
 
 	float threshold_db = -50.f;
+	float hysteresis = -6.f;
 
 public:
     virtual Ref<AudioEffectInstance> _instantiate();
@@ -96,6 +97,9 @@ public:
 
 	void set_threshold_db(float p_threshold_db);
 	float get_threshold_db() const;
+
+	void set_hysteresis(float p_hysteresis);
+	float get_hysteresis() const;
 };
 
 };
