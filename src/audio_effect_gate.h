@@ -31,10 +31,6 @@
 #ifndef AUDIO_EFFECT_GATE_H
 #define AUDIO_EFFECT_GATE_H
 
-//#include <godot_cpp/servers/audio/audio_effect.h>
-//#include <godot_cpp/godot.hpp>
-//#include <godot_cpp/core/class_db.hpp>
-
 #include <godot_cpp/classes/audio_effect.hpp>
 #include <godot_cpp/classes/audio_effect_instance.hpp>
 #include <godot_cpp/classes/audio_frame.hpp>
@@ -61,7 +57,7 @@ class AudioEffectGateInstance : public AudioEffectInstance {
 	float last_envelope_value = 0.f;
 	int samples_since_below_threshold = 0.f;
 protected:
-    static void _bind_methods();
+    static void _bind_methods() { }
 public:
 	float next_envelope_value(float p_sample_rate);
 	void update_gate_state(float p_db_rms);

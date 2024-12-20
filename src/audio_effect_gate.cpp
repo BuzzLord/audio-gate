@@ -30,33 +30,10 @@
 
 #include "audio_effect_gate.h"
 
-//#include <godot_cpp/servers/audio_server.h>
-
 #include <godot_cpp/classes/audio_server.hpp>
 
 
 namespace godot{
-
-void AudioEffectGateInstance::_bind_methods() {
-/*
-	ClassDB::bind_method(D_METHOD("set_threshold_db", "threshold_db"), &AudioEffectGate::set_threshold_db);
-	ClassDB::bind_method(D_METHOD("get_threshold_db"), &AudioEffectGate::get_threshold_db);
-
-	ClassDB::bind_method(D_METHOD("set_attack_ms", "attack_ms"), &AudioEffectGate::set_attack_ms);
-	ClassDB::bind_method(D_METHOD("get_attack_ms"), &AudioEffectGate::get_attack_ms);
-
-	ClassDB::bind_method(D_METHOD("set_hold_ms", "hold_ms"), &AudioEffectGate::set_hold_ms);
-	ClassDB::bind_method(D_METHOD("get_hold_ms"), &AudioEffectGate::get_hold_ms);
-
-	ClassDB::bind_method(D_METHOD("set_release_ms", "release_ms"), &AudioEffectGate::set_release_ms);
-	ClassDB::bind_method(D_METHOD("get_release_ms"), &AudioEffectGate::get_release_ms);
-
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "threshold_db", PROPERTY_HINT_RANGE, "-100,0,0.01,suffix:dB"), "set_threshold_db", "get_threshold_db");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "attack_ms", PROPERTY_HINT_RANGE, "1,2000,1,suffix:ms"), "set_attack_ms", "get_attack_ms");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "hold_ms", PROPERTY_HINT_RANGE, "1,2000,1,suffix:ms"), "set_hold_ms", "get_hold_ms");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "release_ms", PROPERTY_HINT_RANGE, "1,2000,1,suffix:ms"), "set_release_ms", "get_release_ms");
-	*/
-}
 
 void AudioEffectGateInstance::_process(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
 	float sample_rate = AudioServer::get_singleton()->get_mix_rate();
@@ -78,54 +55,11 @@ void AudioEffectGateInstance::_process(const AudioFrame *p_src_frames, AudioFram
 
 	for (int i = 0; i < p_frame_count; i++) {
 		p_dst_frames[i] = p_src_frames[i];
-		p_dst_frames[i].left *= next_envelope_value(sample_rate);
-		p_dst_frames[i].right *= next_envelope_value(sample_rate);
+
+		float env_value = next_envelope_value(sample_rate);
+		p_dst_frames[i].left *= env_value;
+		p_dst_frames[i].right *= env_value;
 	}
-}
-
-float AudioEffectGateInstance::next_envelope_value(float p_sample_rate) {
-	float next_env_value = 0.f;
-	switch (gate_state) {
-		case GATE_CLOSED:
-			next_env_value = 0.f;
-			break;
-		case GATE_ATTACK: // 0 -> 1
-			next_env_value = last_envelope_value + (1000.f / p_sample_rate / base->attack_ms);
-			break;
-		case GATE_OPEN:
-			next_env_value = 1.f;
-			break;
-		case GATE_HOLD:
-			next_env_value = 1.f;
-			samples_since_below_threshold++;
-			break;
-		case GATE_RELEASE: // 1 -> 0
-			next_env_value = last_envelope_value - (1000.f / p_sample_rate / base->release_ms);
-			break;
-		default:
-			break;
-	}
-
-	if (gate_state == GATE_ATTACK && next_env_value >= 1.f) {
-		// ATTACK -> OPEN
-
-		gate_state = GATE_OPEN;
-		next_env_value = 1.f;
-
-	} else if (gate_state == GATE_HOLD && (1000.f * samples_since_below_threshold) / p_sample_rate >= base->hold_ms) {
-		// HOLD -> RELEASE
-
-		gate_state = GATE_RELEASE;
-
-	} else if (gate_state == GATE_RELEASE && next_env_value <= 0.f) {
-		// RELEASE -> CLOSED
-
-		gate_state = GATE_CLOSED;
-		next_env_value = 0.f;
-	}
-
-	last_envelope_value = next_env_value;
-	return next_env_value;
 }
 
 void AudioEffectGateInstance::update_gate_state(float p_db_rms) {
@@ -192,6 +126,51 @@ void AudioEffectGateInstance::update_gate_state(float p_db_rms) {
 	// 		}
 	// 	}
 	// }
+}
+
+float AudioEffectGateInstance::next_envelope_value(float p_sample_rate) {
+	float next_env_value = 0.f;
+	switch (gate_state) {
+		case GATE_CLOSED:
+			next_env_value = 0.f;
+			break;
+		case GATE_ATTACK: // 0 -> 1
+			next_env_value = last_envelope_value + (1000.f / p_sample_rate / base->attack_ms);
+			break;
+		case GATE_OPEN:
+			next_env_value = 1.f;
+			break;
+		case GATE_HOLD:
+			next_env_value = 1.f;
+			samples_since_below_threshold++;
+			break;
+		case GATE_RELEASE: // 1 -> 0
+			next_env_value = last_envelope_value - (1000.f / p_sample_rate / base->release_ms);
+			break;
+		default:
+			break;
+	}
+
+	if (gate_state == GATE_ATTACK && next_env_value >= 1.f) {
+		// ATTACK -> OPEN
+
+		gate_state = GATE_OPEN;
+		next_env_value = 1.f;
+
+	} else if (gate_state == GATE_HOLD && (1000.f * samples_since_below_threshold) / p_sample_rate >= base->hold_ms) {
+		// HOLD -> RELEASE
+
+		gate_state = GATE_RELEASE;
+
+	} else if (gate_state == GATE_RELEASE && next_env_value <= 0.f) {
+		// RELEASE -> CLOSED
+
+		gate_state = GATE_CLOSED;
+		next_env_value = 0.f;
+	}
+
+	last_envelope_value = next_env_value;
+	return next_env_value;
 }
 
 Ref<AudioEffectInstance> AudioEffectGate::_instantiate() {
