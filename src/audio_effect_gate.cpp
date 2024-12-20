@@ -30,33 +30,9 @@
 
 #include "audio_effect_gate.h"
 
-//#include <godot_cpp/servers/audio_server.h>
-
 #include <godot_cpp/classes/audio_server.hpp>
 
-
-namespace godot{
-
-void AudioEffectGateInstance::_bind_methods() {
-/*
-	ClassDB::bind_method(D_METHOD("set_threshold_db", "threshold_db"), &AudioEffectGate::set_threshold_db);
-	ClassDB::bind_method(D_METHOD("get_threshold_db"), &AudioEffectGate::get_threshold_db);
-
-	ClassDB::bind_method(D_METHOD("set_attack_ms", "attack_ms"), &AudioEffectGate::set_attack_ms);
-	ClassDB::bind_method(D_METHOD("get_attack_ms"), &AudioEffectGate::get_attack_ms);
-
-	ClassDB::bind_method(D_METHOD("set_hold_ms", "hold_ms"), &AudioEffectGate::set_hold_ms);
-	ClassDB::bind_method(D_METHOD("get_hold_ms"), &AudioEffectGate::get_hold_ms);
-
-	ClassDB::bind_method(D_METHOD("set_release_ms", "release_ms"), &AudioEffectGate::set_release_ms);
-	ClassDB::bind_method(D_METHOD("get_release_ms"), &AudioEffectGate::get_release_ms);
-
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "threshold_db", PROPERTY_HINT_RANGE, "-100,0,0.01,suffix:dB"), "set_threshold_db", "get_threshold_db");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "attack_ms", PROPERTY_HINT_RANGE, "1,2000,1,suffix:ms"), "set_attack_ms", "get_attack_ms");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "hold_ms", PROPERTY_HINT_RANGE, "1,2000,1,suffix:ms"), "set_hold_ms", "get_hold_ms");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "release_ms", PROPERTY_HINT_RANGE, "1,2000,1,suffix:ms"), "set_release_ms", "get_release_ms");
-	*/
-}
+namespace godot {
 
 void AudioEffectGateInstance::_process(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
 	float sample_rate = AudioServer::get_singleton()->get_mix_rate();
@@ -74,40 +50,50 @@ void AudioEffectGateInstance::_process(const AudioFrame *p_src_frames, AudioFram
 	float rms = MAX(rms_l, rms_r);
 	float db_rms = Math::linear2db(rms);
 
-	bool now_below_threshold = db_rms < base->threshold_db;
-	if (now_below_threshold && !below_threshold) {
-		if (gate_state == GATE_ATTACK) {
-			// ATTACK -> RELEASE
-
-			gate_state = GATE_RELEASE;
-		} else {
-			// OPEN -> HOLD
-
-			gate_state = GATE_HOLD;
-			samples_since_below_threshold = 0;
-		}
-
-	} else if (!now_below_threshold && below_threshold) {
-		if (gate_state == GATE_HOLD) {
-			// HOLD -> OPEN
-
-			gate_state = GATE_OPEN;
-
-		} else {
-			// RELEASE/CLOSED -> ATTACK
-
-			gate_state = GATE_ATTACK;
-		}
-	}
+	update_gate_state(db_rms);
 
 	for (int i = 0; i < p_frame_count; i++) {
 		p_dst_frames[i] = p_src_frames[i];
-		p_dst_frames[i].left *= next_envelope_value(sample_rate);
-		p_dst_frames[i].right *= next_envelope_value(sample_rate);
 
+		float env_value = next_envelope_value(sample_rate);
+		p_dst_frames[i].left *= env_value;
+		p_dst_frames[i].right *= env_value;
 	}
+}
 
-	below_threshold = now_below_threshold;
+void AudioEffectGateInstance::update_gate_state(float p_db_rms) {
+	// GATE_HOLD -> GATE_OPEN at threshold level
+	if (gate_state == GATE_CLOSED || gate_state == GATE_RELEASE || gate_state == GATE_HOLD) {
+		// Was closed or closing
+		bool above_threshold = p_db_rms >= base->threshold_db;
+		if (above_threshold) {
+			if (gate_state == GATE_HOLD) {
+				// HOLD -> OPEN
+
+				gate_state = GATE_OPEN;
+
+			} else {
+				// RELEASE/CLOSED -> ATTACK
+
+				gate_state = GATE_ATTACK;
+			}
+		}
+
+	} else /* (gate_state == GATE_OPEN || gate_state == GATE_ATTACK) */ {
+		bool below_threshold = p_db_rms < (base->threshold_db + base->hysteresis);
+		if (below_threshold) {
+			if (gate_state == GATE_ATTACK) {
+				// ATTACK -> RELEASE
+
+				gate_state = GATE_RELEASE;
+			} else if (gate_state == GATE_OPEN) {
+				// OPEN -> HOLD
+
+				gate_state = GATE_HOLD;
+				samples_since_below_threshold = 0;
+			}
+		}
+	}
 }
 
 float AudioEffectGateInstance::next_envelope_value(float p_sample_rate) {
@@ -155,7 +141,6 @@ float AudioEffectGateInstance::next_envelope_value(float p_sample_rate) {
 	return next_env_value;
 }
 
-
 Ref<AudioEffectInstance> AudioEffectGate::_instantiate() {
 	Ref<AudioEffectGateInstance> ins;
 	ins.instantiate();
@@ -164,13 +149,20 @@ Ref<AudioEffectInstance> AudioEffectGate::_instantiate() {
 	return ins;
 }
 
-
 void AudioEffectGate::set_threshold_db(float p_threshold_db) {
 	threshold_db = p_threshold_db;
 }
 
 float AudioEffectGate::get_threshold_db() const {
 	return threshold_db;
+}
+
+void AudioEffectGate::set_hysteresis(float p_hysteresis) {
+	hysteresis = p_hysteresis;
+}
+
+float AudioEffectGate::get_hysteresis() const {
+	return hysteresis;
 }
 
 void AudioEffectGate::set_attack_ms(float p_attack_ms) {
@@ -201,6 +193,9 @@ void AudioEffectGate::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_threshold_db", "threshold_db"), &AudioEffectGate::set_threshold_db);
 	ClassDB::bind_method(D_METHOD("get_threshold_db"), &AudioEffectGate::get_threshold_db);
 
+	ClassDB::bind_method(D_METHOD("set_hysteresis", "hysteresis"), &AudioEffectGate::set_hysteresis);
+	ClassDB::bind_method(D_METHOD("get_hysteresis"), &AudioEffectGate::get_hysteresis);
+
 	ClassDB::bind_method(D_METHOD("set_attack_ms", "attack_ms"), &AudioEffectGate::set_attack_ms);
 	ClassDB::bind_method(D_METHOD("get_attack_ms"), &AudioEffectGate::get_attack_ms);
 
@@ -211,9 +206,10 @@ void AudioEffectGate::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_release_ms"), &AudioEffectGate::get_release_ms);
 
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "threshold_db", PROPERTY_HINT_RANGE, "-100,0,0.01,suffix:dB"), "set_threshold_db", "get_threshold_db");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "hysteresis", PROPERTY_HINT_RANGE, "-18,0,0.01,suffix:dB"), "set_hysteresis", "get_hysteresis");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "attack_ms", PROPERTY_HINT_RANGE, "1,2000,1,suffix:ms"), "set_attack_ms", "get_attack_ms");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "hold_ms", PROPERTY_HINT_RANGE, "1,2000,1,suffix:ms"), "set_hold_ms", "get_hold_ms");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "release_ms", PROPERTY_HINT_RANGE, "1,2000,1,suffix:ms"), "set_release_ms", "get_release_ms");
 }
 
-};
+}; //namespace godot

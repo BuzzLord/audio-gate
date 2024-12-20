@@ -11,74 +11,56 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        identifier: [linux, windows, macos, ios, android-arm32, android-arm64, web-nothreads]
+        target: [debug, release]
         include:
-          - identifier: linux-debug
-            name: Linux Debug
-            runner: ubuntu-20.04
-            target: template_debug
+          - identifier: linux
             platform: linux
-            arch: x86_64
-          - identifier: linux-release
-            name: Linux Release
-            runner: ubuntu-20.04
-            target: template_release
-            platform: linux
-            arch: x86_64
-          - identifier: windows-debug
-            name: Windows Debug
-            runner: ubuntu-20.04
-            target: template_debug
+            name: 🐧 Linux
+            runner: ubuntu-latest
+            flags: arch=x86_64
+
+          - identifier: windows
             platform: windows
-            arch: x86_64
-          - identifier: windows-release
-            name: Windows Release
-            runner: ubuntu-20.04
-            target: template_release
-            platform: windows
-            arch: x86_64
-          - identifier: android-release
-            name: Android Release
-            runner: ubuntu-20.04
-            target: template_release
+            name: 🪟 Windows
+            runner: ubuntu-latest
+            flags: arch=x86_64
+
+          - identifier: macos
+            platform: macos
+            name: 🍎 macOS
+            runner: macos-latest
+            flags: arch=universal
+
+          - identifier: ios
+            platform: ios
+            name: 🍏 iOS
+            runner: macos-latest
+            flags: arch=universal
+
+          - identifier: android-arm32
             platform: android
-            arch: arm64
+            name: 🤖 Android Arm32
+            runner: ubuntu-latest
+            flags: arch=arm32
+
+          - identifier: android-arm64
+            platform: android
+            name: 🤖 Android Arm64
+            runner: ubuntu-latest
+            flags: arch=arm64
+
+          - identifier: web-nothreads
+            platform: web
+            name: 🌐 Web No-threads
+            runner: ubuntu-latest
+            flags: threads=no
 
     steps:
-      - name: (Windows) Install mingw64
-        if: ${{ startsWith(matrix.identifier, 'windows-') }}
-        shell: sh
-        run: |
-          sudo apt-get install mingw-w64
-          sudo update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
-          sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
-
-      - name: (Android) Install JDK 17
-        if: ${{ startsWith(matrix.identifier, 'android-') }}
-        uses: actions/setup-java@v3
-        with:
-          java-version: 17
-          distribution: temurin
-
-      - name: (Android) Install Android SDK
-        if: ${{ startsWith(matrix.identifier, 'android-') }}
-        uses: android-actions/setup-android@v3
-
-      # From Godot docs, might not be necessary.
-      #- name: (Android) Install Android Tools
-      #  if: ${{ startsWith(matrix.identifier, 'android-') }}
-      #  shell: sh
-      #  run: |
-      #    "$ANDROID_SDK_ROOT"/cmdline-tools/latest/bin/sdkmanager --sdk_root="$ANDROID_SDK_ROOT" "platform-tools" "build-tools;30.0.3" "platforms;android-29" "cmdline-tools;latest" "cmake;3.10.2.4988404"
-
-      - name: (Android) Install NDK r23c
-        if: ${{ matrix.platform == 'android' }}
-        uses: nttld/setup-ndk@v1
-        with:
-          ndk-version: r23c
-          link-to-sdk: true
-
       - name: Install Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.x
 
       - name: Install SCons
         shell: bash
@@ -87,8 +69,54 @@ jobs:
           python -m pip install scons
           scons --version
 
+      - name: (Windows) Install mingw64
+        if: ${{ matrix.platform == 'windows' }}
+        shell: sh
+        run: |
+          sudo apt-get install mingw-w64
+          sudo update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
+          sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+
+      - name: (Android) Install JDK 17
+        if: ${{ matrix.platform == 'android' }}
+        uses: actions/setup-java@v5
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: (Android) Install Android SDK
+        if: ${{ matrix.platform == 'android' }}
+        uses: android-actions/setup-android@v3
+
+      # From Godot docs, might not be necessary.
+      #- name: (Android) Install Android Tools
+      #  if: ${{ matrix.platform == 'android' }}
+      #  shell: sh
+      #  run: |
+      #    "$ANDROID_SDK_ROOT"/cmdline-tools/latest/bin/sdkmanager --sdk_root="$ANDROID_SDK_ROOT" "platform-tools" "build-tools;30.0.3" "platforms;android-29" "cmdline-tools;latest" "cmake;3.10.2.4988404"
+
+      - name: (Android) Install NDK r23c
+        if: ${{ matrix.platform == 'android' }}
+        uses: nttld/setup-ndk@v1.6
+        with:
+          ndk-version: r23c
+          link-to-sdk: true
+
+      - name: Setup Web Dependencies
+        if: ${{ matrix.platform == 'web' }}
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.64
+          no-cache: true
+
+      - name: Verify Emscripten setup
+        if: ${{ matrix.platform == 'web' }}
+        shell: bash
+        run: |
+          emcc -v
+
       - name: Checkout project
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -107,25 +135,41 @@ jobs:
 #            ${{ matrix.identifier }}-${{ github.ref }}
 #            ${{ matrix.identifier }}
 
-      - name: Compile extension
+      - name: Build extension
         shell: sh
 #        env:
 #          SCONS_CACHE: '${{ github.workspace }}/.scons-cache/'
 #          SCONS_CACHE_LIMIT: 8192
         run: |
-          scons target='${{ matrix.target }}' platform='${{ matrix.platform }}' arch='${{ matrix.arch }}' -j2
-          ls -l project/addons/*/bin/
+          scons target='template_${{ matrix.target }}' platform='${{ matrix.platform }}' ${{ matrix.flags }} debug_symbols=no -j2
+          ls -l project/addons/audio_gate/bin/
+
+      - name: Strip Libraries (Windows/Linux)
+        if: ${{ matrix.platform == 'windows' || matrix.platform == 'linux' }}
+        shell: sh
+        run: |
+          strip project/addons/audio_gate/bin/libaudio_gate.*
+          ls -l project/addons/audio_gate/bin/
 
       - name: Copy extra files to addon
         shell: sh
         run: |
-          for addon in ${{ github.workspace }}/project/addons/*/; do
-            cp --no-clobber '${{ github.workspace }}/README.md' '${{ github.workspace }}/LICENSE' "$addon"
-          done
+          cp '${{ github.workspace }}/README.md' '${{ github.workspace }}/LICENSE' ${{ github.workspace }}/project/addons/audio_gate/
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v6
         with:
-          name: ${{ github.event.repository.name }}
+          name: gate-${{ matrix.identifier }}-${{ matrix.target }}
           path: |
             ${{ github.workspace }}/project/
+
+  merge:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Merge Artifacts
+        uses: actions/upload-artifact/merge@v6
+        with:
+          name: ${{ github.event.repository.name }}
+          pattern: gate-*
+          delete-merged: true
