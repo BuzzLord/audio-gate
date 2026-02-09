@@ -32,8 +32,7 @@
 
 #include <godot_cpp/classes/audio_server.hpp>
 
-
-namespace godot{
+namespace godot {
 
 void AudioEffectGateInstance::_process(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
 	float sample_rate = AudioServer::get_singleton()->get_mix_rate();
@@ -95,37 +94,6 @@ void AudioEffectGateInstance::update_gate_state(float p_db_rms) {
 			}
 		}
 	}
-
-	// GATE_HOLD -> GATE_OPEN at hysteresis level
-	// if (gate_state == GATE_CLOSED || gate_state == GATE_RELEASE) {
-	// 	bool above_threshold = p_db_rms >= base->threshold_db;
-	// 	if (above_threshold) {
-	// 		// RELEASE/CLOSED -> ATTACK
-
-	// 		gate_state = GATE_ATTACK;
-	// 	}
-
-	// } else /* (gate_state == GATE_OPEN || gate_state == GATE_ATTACK || gate_state == GATE_HOLD) */ {
-	// 	bool below_threshold = p_db_rms < (base->threshold_db + base->hysteresis);
-	// 	if (below_threshold) {
-	// 		if (gate_state == GATE_ATTACK) {
-	// 			// ATTACK -> RELEASE
-
-	// 			gate_state = GATE_RELEASE;
-	// 		} else if (gate_state == GATE_OPEN) {
-	// 			// OPEN -> HOLD
-
-	// 			gate_state = GATE_HOLD;
-	// 			samples_since_below_threshold = 0;
-	// 		}
-	// 	} else {
-	// 		if (gate_state == GATE_HOLD) {
-	// 			// HOLD -> OPEN
-
-	// 			gate_state = GATE_OPEN;
-	// 		}
-	// 	}
-	// }
 }
 
 float AudioEffectGateInstance::next_envelope_value(float p_sample_rate) {
@@ -180,7 +148,6 @@ Ref<AudioEffectInstance> AudioEffectGate::_instantiate() {
 
 	return ins;
 }
-
 
 void AudioEffectGate::set_threshold_db(float p_threshold_db) {
 	threshold_db = p_threshold_db;
@@ -245,4 +212,4 @@ void AudioEffectGate::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "release_ms", PROPERTY_HINT_RANGE, "1,2000,1,suffix:ms"), "set_release_ms", "get_release_ms");
 }
 
-};
+}; //namespace godot

@@ -10,7 +10,6 @@ using namespace godot;
 void initialize_gate();
 void uninitialize_gate();
 
-
 void initialize_gate_module(ModuleInitializationLevel p_level) {
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SERVERS) {
 		return;
@@ -39,4 +38,3 @@ GDExtensionBool GDE_EXPORT gate_effect_init(GDExtensionInterfaceGetProcAddress p
 }
 }
 // GDREGISTER_CLASS(AudioEffectGate);
-

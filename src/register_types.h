@@ -13,5 +13,3 @@ void uninitialize_gate();
 // GDREGISTER_CLASS(AudioEffectGate);
 
 #endif
-
-

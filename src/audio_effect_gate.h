@@ -56,8 +56,10 @@ class AudioEffectGateInstance : public AudioEffectInstance {
 	GateState gate_state = GATE_CLOSED;
 	float last_envelope_value = 0.f;
 	int samples_since_below_threshold = 0.f;
+
 protected:
-    static void _bind_methods() { }
+	static void _bind_methods() {}
+
 public:
 	float next_envelope_value(float p_sample_rate);
 	void update_gate_state(float p_db_rms);
@@ -80,7 +82,7 @@ protected:
 	float hysteresis = -6.f;
 
 public:
-    virtual Ref<AudioEffectInstance> _instantiate();
+	virtual Ref<AudioEffectInstance> _instantiate();
 
 	void set_attack_ms(float p_attack_ms);
 	float get_attack_ms();
@@ -98,6 +100,6 @@ public:
 	float get_hysteresis() const;
 };
 
-};
+}; //namespace godot
 
 #endif // AUDIO_EFFECT_GATE_H
