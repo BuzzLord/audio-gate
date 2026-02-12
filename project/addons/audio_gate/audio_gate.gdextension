@@ -5,13 +5,22 @@ compatibility_minimum = 4.2
 
 [libraries]
 
-macos.debug = "bin/libaudio_gate.macos.debug.framework"
-macos.release = "bin/libaudio_gate.macos.release.framework"
 windows.debug.x86_64 = "bin/libaudio_gate.windows.debug.x86_64.dll"
 windows.release.x86_64 = "bin/libaudio_gate.windows.release.x86_64.dll"
+
 linux.debug.x86_64 = "bin/libaudio_gate.linux.debug.x86_64.so"
 linux.release.x86_64 = "bin/libaudio_gate.linux.release.x86_64.so"
-linux.debug.arm64 = "bin/libaudio_gate.linux.debug.arm64.so"
-linux.release.arm64 = "bin/libaudio_gate.linux.release.arm64.so"
-linux.debug.rv64 = "bin/libaudio_gate.linux.debug.rv64.so"
-linux.release.rv64 = "bin/libaudio_gate.linux.release.rv64.so"
+
+macos.debug = "bin/libaudio_gate.macos.debug.framework"
+macos.release = "bin/libaudio_gate.macos.release.framework"
+
+android.debug.arm32 = "bin/libaudio_gate.android.debug.arm32.so"
+android.release.arm32 = "bin/libaudio_gate.android.release.arm32.so"
+android.debug.arm64 = "bin/libaudio_gate.android.debug.arm64.so"
+android.release.arm64 = "bin/libaudio_gate.android.release.arm64.so"
+
+ios.debug = "bin/libaudio_gate.ios.debug.universal.dylib"
+ios.release = "bin/libaudio_gate.ios.release.universal.dylib"
+
+web.debug = "bin/libaudio_gate.web.debug.wasm32.wasm"
+web.release = "bin/libaudio_gate.web.release.wasm32.wasm"
