@@ -154,7 +154,7 @@ jobs:
       - name: Copy extra files to addon
         shell: sh
         run: |
-          cp '${{ github.workspace }}/README.md' '${{ github.workspace }}/LICENSE.txt' ${{ github.workspace }}/project/addons/audio_gate/
+          cp '${{ github.workspace }}/README.md' '${{ github.workspace }}/LICENSE' ${{ github.workspace }}/project/addons/audio_gate/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6
