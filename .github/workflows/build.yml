@@ -137,12 +137,11 @@ jobs:
 
       - name: Build extension
         shell: sh
-        env:
-          TARGET: 'template_${{ matrix.target }}'
+#        env:
 #          SCONS_CACHE: '${{ github.workspace }}/.scons-cache/'
 #          SCONS_CACHE_LIMIT: 8192
         run: |
-          scons target=$TARGET platform='${{ matrix.platform }}' ${{ matrix.flags }} debug_symbols=no -j2
+          scons target='template_${{ matrix.target }}' platform='${{ matrix.platform }}' ${{ matrix.flags }} debug_symbols=no -j2
           ls -l project/addons/audio_gate/bin/
 
       - name: Strip Libraries (Windows/Linux)
