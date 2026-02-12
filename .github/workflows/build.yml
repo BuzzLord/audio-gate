@@ -142,28 +142,25 @@ jobs:
 #          SCONS_CACHE: '${{ github.workspace }}/.scons-cache/'
 #          SCONS_CACHE_LIMIT: 8192
         run: |
-          scons target=$TARGET platform='${{ matrix.platform }}' ${{ matrix.flags }} -j2
-          ls -l project/addons/*/bin/
+          scons target=$TARGET platform='${{ matrix.platform }}' ${{ matrix.flags }} debug_symbols=no -j2
+          ls -l project/addons/audio_gate/bin/
 
       - name: Strip Libraries (Windows/Linux)
         if: ${{ matrix.platform == 'windows' || matrix.platform == 'linux' }}
         shell: sh
         run: |
-          ls -l project/addons/*/bin/
-          strip project/addons/*/bin/libaudio_gate.*
-          ls -l project/addons/*/bin/
+          strip project/addons/audio_gate/bin/libaudio_gate.*
+          ls -l project/addons/audio_gate/bin/
 
       - name: Copy extra files to addon
         shell: sh
         run: |
-          for addon in ${{ github.workspace }}/project/addons/*/; do
-            cp --update=none '${{ github.workspace }}/README.md' '${{ github.workspace }}/LICENSE' "$addon"
-          done
+          cp '${{ github.workspace }}/README.md' '${{ github.workspace }}/LICENSE.txt' ${{ github.workspace }}/project/addons/audio_gate/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6
         with:
-          name: gate-${{ matrix.identifier }}
+          name: gate-${{ matrix.identifier }}-${{ matrix.target }}
           path: |
             ${{ github.workspace }}/project/
 
