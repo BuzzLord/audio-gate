@@ -77,8 +77,9 @@ jobs:
           ndk-version: r23c
           link-to-sdk: true
 
-      - name: Install Python
-        uses: actions/setup-python@v6
+      # Python is already installed in ubuntu-latest, don't need to install separately.
+      # - name: Install Python
+      #   uses: actions/setup-python@v6
 
       - name: Install SCons
         shell: bash
@@ -120,12 +121,23 @@ jobs:
         shell: sh
         run: |
           for addon in ${{ github.workspace }}/project/addons/*/; do
-            cp --no-clobber '${{ github.workspace }}/README.md' '${{ github.workspace }}/LICENSE' "$addon"
+            cp --update=none '${{ github.workspace }}/README.md' '${{ github.workspace }}/LICENSE' "$addon"
           done
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ github.event.repository.name }}
+          name: gate-${{ matrix.identifier }}
           path: |
             ${{ github.workspace }}/project/
+
+  merge:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Merge Artifacts
+        uses: actions/upload-artifact/merge@v6
+        with:
+          name: ${{ github.event.repository.name }}
+          pattern: gate-*
+          delete-merged: true
